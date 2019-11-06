@@ -1,0 +1,69 @@
+Option Explicit
+  
+Public WithEvents myOlItems As Outlook.Items
+Private Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As LongPtr) 'For 64 Bit Systems
+
+Public Sub Initialize_handler()
+ Set myOlItems = Application.GetNamespace("MAPI").GetDefaultFolder(olFolderDrafts).Folders("Ávarðingar").Items
+End Sub
+
+Private Sub myOlItems_ItemAdd(ByVal Item As Object)
+ Dim myOlMItem As Outlook.MailItem
+ Dim myOlAtts As Outlook.Attachments
+ Dim myOlAtt As Outlook.Attachment
+ Dim fso As FileSystemObject
+ Dim fn As String
+ Dim appl As Excel.Application
+ Dim ws As Excel.Worksheet
+ Dim i As Long
+ Dim pupilid As String
+ Dim nam As String
+ Dim attyear As Double
+ Dim wrtyear As Double
+ Dim warnlast As String
+ Dim mail As Outlook.MailItem
+ Dim insp As Inspector
+ Dim s As String
+ 
+ Set fso = New FileSystemObject
+ If (Item.Attachments.Count < 1) Then
+ Else
+    Set myOlAtt = Item.Attachments(1)
+    fn = fso.GetTempName()
+    myOlAtt.SaveAsFile fn
+    Set appl = CreateObject("Excel.Application")
+    appl.Workbooks.Open (fn)
+    Set ws = appl.Sheets(1)
+    For i = 5 To ws.Rows.Count
+       pupilid = ws.Cells(i, 1)
+       If (pupilid = "") Then GoTo cont
+       nam = ws.Cells(i, 2)
+       attyear = Round(ws.Cells(i, 6) * 100, 2)
+       wrtyear = Round(ws.Cells(i, 9) * 100, 2)
+       warnlast = ws.Cells(i, 10)
+       Set mail = Application.CreateItem(olMailItem)
+       mail.To = "jon@guttesen.org"
+       mail.Subject = "Ávaring vegna ov stóra fráveru"
+       s = "Til [Name]." & vbCrLf & vbCrLf & "Fráverðan hjá tær tann [Date] er ov stór, tí fært tú hesa ávaringina." & vbCrLf & _
+         "Fraveran er: [AttendancePercentage] %" & vbCrLf & _
+         "Skriftliga fráveran er: [WrittenPercentage] %" & vbCrLf & vbCrLf & _
+         "Blíðar heilsarnir" & vbCrLf & "Jón Guttesen, Miðnámsskúlalærari" & vbCrLf & "Tlf. +298 288408" & vbCrLf & "Miðnámsskúlin í Suðuroy" & vbCrLf & "Grønudalur 2" & vbCrLf & "FO-950 Porkeri" & vbCrLf & "www.midnam.fo"
+       ' mail.Display
+       'Set insp = mail.GetInspector
+       'If (Not insp Is Nothing) Then insp.Activate
+       s = Replace(s, "[Name]", nam)
+       s = Replace(s, "[Date]", Format(Now, "Medium Date"))
+       s = Replace(s, "[AttendancePercentage]", attyear)
+       s = Replace(s, " [WrittenPercentage]", wrtyear)
+       mail.Body = s
+       mail.Move (Application.GetNamespace("MAPI").GetDefaultFolder(olFolderDrafts).Folders("Ávarðingar"))
+       mail.Save
+       Set mail = Nothing
+    Next
+cont:
+    appl.Quit
+    Item.Delete
+    On Error Resume Next
+    fso.DeleteFile fn, True
+  End If
+End Sub
