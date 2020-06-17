@@ -1,0 +1,12 @@
+Enter-PSSession
+#Start-WUScan -SearchCriteria "Type='Software' AND IsInstalled=0"
+# $u = Invoke-Command -ComputerName MonPC -ScriptBlock {Start-WUScan -SearchCriteria "UpdateId='' AND IsInstalled=1"} -Credential administrateuradmin
+
+Set-ExecutionPolicy -ExecutionPolicy Unrestricted
+
+Install-Module PSWindowsUpdate
+Import-Module PSWindowsUpdate
+Get-WindowsUpdate
+
+Download-WindowsUpdate
+Install-WindowsUpdate
